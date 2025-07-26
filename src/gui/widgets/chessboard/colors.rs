@@ -22,30 +22,36 @@ impl Default for ChessboardColors {
 
 /// Builds a [`ChessboardColors`] and lets you override the colors you need.
 pub struct ChessboardColorsBuilder {
+    #[allow(unused)]
     colors: ChessboardColors,
 }
 
 impl ChessboardColorsBuilder {
+    #[allow(unused)]
     pub fn new() -> Self {
         ChessboardColorsBuilder {
             colors: ChessboardColors::default(),
         }
     }
 
+    #[allow(unused)]
     pub fn build(&self) -> ChessboardColors {
         self.colors.clone()
     }
 
+    #[allow(unused)]
     pub fn set_background(&mut self, color: Color) -> &mut Self {
         self.colors.background = color;
         self
     }
 
+    #[allow(unused)]
     pub fn set_white_cell(&mut self, color: Color) -> &mut Self {
         self.colors.white_cell = color;
         self
     }
 
+    #[allow(unused)]
     pub fn set_black_cell(&mut self, color: Color) -> &mut Self {
         self.colors.black_cell = color;
         self

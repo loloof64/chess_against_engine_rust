@@ -2,9 +2,6 @@
 
 mod gui;
 use gui::widgets::chessboard::Chessboard;
-use iced::Color;
-
-use crate::gui::widgets::chessboard::ChessboardColorsBuilder;
 
 fn main() -> iced::Result {
     iced::run("Chess against engine", App::update, App::view)
@@ -28,6 +25,9 @@ impl App {
             .build();
         Chessboard::new_from_colors(board_colors).into()
         */
-        Chessboard::new().into()
+        Chessboard::new_from_position(
+            "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2".to_string(),
+        )
+        .into()
     }
 }
