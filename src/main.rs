@@ -2,7 +2,7 @@
 
 mod gui;
 use gui::widgets::chessboard::Chessboard;
-use iced::widget::{Scrollable, column};
+use iced::{Length, widget::container};
 
 fn main() -> iced::Result {
     iced::run("Chess against engine", App::update, App::view)
@@ -18,12 +18,6 @@ impl App {
     fn update(&mut self, _message: Message) {}
 
     fn view(&self) -> iced::Element<Message> {
-        Scrollable::new(column![
-            Chessboard::new_from_position(
-                "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2".to_string(),
-            ),
-            Chessboard::new()
-        ])
-        .into()
+        container(Chessboard::new()).center(Length::Fill).into()
     }
 }
