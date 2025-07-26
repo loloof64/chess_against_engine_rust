@@ -77,8 +77,8 @@ impl Chessboard {
                     self.colors.black_cell
                 };
                 let cell_bounds = Rectangle {
-                    x: cell_size * (0.5 + col as f32),
-                    y: cell_size * (0.5 + row as f32),
+                    x: bounds.x + cell_size * (0.5 + col as f32),
+                    y: bounds.y + cell_size * (0.5 + row as f32),
                     width: cell_size,
                     height: cell_size,
                 };
@@ -114,8 +114,8 @@ impl Chessboard {
                 let is_occupied_cell = board_logic_cell.is_occupied();
                 if is_occupied_cell {
                     let piece_bounds = Rectangle {
-                        x: cell_size * (0.5 + col as f32),
-                        y: cell_size * (0.5 + row as f32),
+                        x: bounds.x + cell_size * (0.5 + col as f32),
+                        y: bounds.y + cell_size * (0.5 + row as f32),
                         width: cell_size,
                         height: cell_size,
                     };
