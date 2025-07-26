@@ -27,6 +27,17 @@ impl Chessboard {
     pub fn new_from_colors(colors: ChessboardColors) -> Self {
         Chessboard { colors: colors }
     }
+
+    fn draw_background(&self, renderer: &mut impl iced::advanced::Renderer, bounds: Rectangle) {
+        renderer.fill_quad(
+            Quad {
+                bounds: bounds,
+                border: Border::default(),
+                shadow: Shadow::default(),
+            },
+            self.colors.background,
+        );
+    }
 }
 
 impl<Message, Renderer> Widget<Message, Theme, Renderer> for Chessboard
@@ -68,21 +79,14 @@ where
         let allocated_bounds = layout.bounds();
         let allocated_size = allocated_bounds.size();
         let allocated_width = allocated_size.width;
-        let background_bounds = Rectangle {
+        let bounds = Rectangle {
             width: allocated_width,
             height: allocated_width,
             x: allocated_bounds.x,
             y: allocated_bounds.y,
         };
 
-        renderer.fill_quad(
-            Quad {
-                bounds: background_bounds,
-                border: Border::default(),
-                shadow: Shadow::default(),
-            },
-            self.colors.background,
-        );
+        self.draw_background(renderer, bounds);
     }
 }
 
