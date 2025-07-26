@@ -1,5 +1,9 @@
+//! A chessboard component
+mod colors;
+pub use colors::{ChessboardColors, ChessboardColorsBuilder};
+
 use iced::{
-    Border, Color, Element, Length, Rectangle, Shadow, Size, Theme,
+    Border, Element, Length, Rectangle, Shadow, Size, Theme,
     advanced::{
         Layout, Widget, layout, mouse,
         renderer::{self, Quad},
@@ -7,7 +11,23 @@ use iced::{
     },
 };
 
-pub struct Chessboard;
+pub struct Chessboard {
+    colors: ChessboardColors,
+}
+
+impl Chessboard {
+    /// Chessboard with default colors.
+    pub fn new() -> Self {
+        Chessboard {
+            colors: ChessboardColors::default(),
+        }
+    }
+
+    /// Chessboard with custom colors.
+    pub fn new_from_colors(colors: ChessboardColors) -> Self {
+        Chessboard { colors: colors }
+    }
+}
 
 impl<Message, Renderer> Widget<Message, Theme, Renderer> for Chessboard
 where
@@ -61,7 +81,7 @@ where
                 border: Border::default(),
                 shadow: Shadow::default(),
             },
-            Color::from_rgb8(120, 71, 145),
+            self.colors.background,
         );
     }
 }
