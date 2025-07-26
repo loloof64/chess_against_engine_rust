@@ -20,9 +20,14 @@ impl App {
     fn update(&mut self, _message: Message) {}
 
     fn view(&self) -> iced::Element<Message> {
+        /*
         let board_colors = ChessboardColorsBuilder::new()
             .set_background(Color::from_rgb(1.0, 0.0, 0.0))
+            .set_white_cell(Color::from_rgb8(0, 255, 0))
+            .set_black_cell(Color::from_rgb8(0, 0, 255))
             .build();
         Chessboard::new_from_colors(board_colors).into()
+        */
+        Chessboard::new().into()
     }
 }

@@ -1,5 +1,6 @@
 //! A chessboard component
 mod colors;
+
 pub use colors::{ChessboardColors, ChessboardColorsBuilder};
 
 use iced::{
@@ -37,6 +38,37 @@ impl Chessboard {
             },
             self.colors.background,
         );
+    }
+
+    fn draw_cells(&self, renderer: &mut impl iced::advanced::Renderer, bounds: Rectangle) {
+        let common_size = bounds.size().width;
+        let cell_size = common_size / 9.0;
+
+        for row in 0..8 {
+            for col in 0..8 {
+                let is_white_cell = (col + row) % 2 == 0;
+                let color = if is_white_cell {
+                    self.colors.white_cell
+                } else {
+                    self.colors.black_cell
+                };
+                let cell_bounds = Rectangle {
+                    x: cell_size * (0.5 + col as f32),
+                    y: cell_size * (0.5 + row as f32),
+                    width: cell_size,
+                    height: cell_size,
+                };
+
+                renderer.fill_quad(
+                    Quad {
+                        bounds: cell_bounds,
+                        border: Border::default(),
+                        shadow: Shadow::default(),
+                    },
+                    color,
+                );
+            }
+        }
     }
 }
 
@@ -87,6 +119,7 @@ where
         };
 
         self.draw_background(renderer, bounds);
+        self.draw_cells(renderer, bounds);
     }
 }
 

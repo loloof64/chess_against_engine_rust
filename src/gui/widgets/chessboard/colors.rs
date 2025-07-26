@@ -5,13 +5,17 @@ use iced::Color;
 #[derive(Debug, Clone)]
 pub struct ChessboardColors {
     pub background: Color,
+    pub white_cell: Color,
+    pub black_cell: Color,
 }
 
 /// Defaults colors for a [`super::Chessboard`].
 impl Default for ChessboardColors {
     fn default() -> Self {
         Self {
-            background: Color::from_rgb8(120, 71, 145),
+            background: Color::from_rgb8(120, 71, 145),  // purple
+            white_cell: Color::from_rgb8(255, 222, 173), // navajowhite
+            black_cell: Color::from_rgb8(205, 133, 63),  // peru
         }
     }
 }
@@ -34,6 +38,16 @@ impl ChessboardColorsBuilder {
 
     pub fn set_background(&mut self, color: Color) -> &mut Self {
         self.colors.background = color;
+        self
+    }
+
+    pub fn set_white_cell(&mut self, color: Color) -> &mut Self {
+        self.colors.white_cell = color;
+        self
+    }
+
+    pub fn set_black_cell(&mut self, color: Color) -> &mut Self {
+        self.colors.black_cell = color;
         self
     }
 }
