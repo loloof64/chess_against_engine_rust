@@ -1,5 +1,6 @@
 //! A chessboard component
 mod colors;
+mod pieces_images;
 
 pub use colors::ChessboardColors;
 
@@ -11,13 +12,15 @@ use iced::{
         svg::Svg,
         widget::Tree,
     },
-    widget::svg::Handle,
 };
 use owlchess::{File, Rank};
+
+use crate::gui::widgets::chessboard::pieces_images::PiecesImages;
 
 pub struct Chessboard {
     colors: ChessboardColors,
     fen: String,
+    images: PiecesImages,
 }
 
 impl Chessboard {
@@ -26,6 +29,7 @@ impl Chessboard {
         Chessboard {
             colors: ChessboardColors::default(),
             fen: owlchess::Board::initial().as_fen(),
+            images: PiecesImages::new(),
         }
     }
 
@@ -34,6 +38,7 @@ impl Chessboard {
         Chessboard {
             colors: colors,
             fen: owlchess::Board::initial().as_fen(),
+            images: PiecesImages::new(),
         }
     }
 
@@ -42,6 +47,7 @@ impl Chessboard {
         Chessboard {
             colors: ChessboardColors::default(),
             fen: fen,
+            images: PiecesImages::new(),
         }
     }
 
@@ -50,6 +56,7 @@ impl Chessboard {
         Chessboard {
             colors: colors,
             fen: fen,
+            images: PiecesImages::new(),
         }
     }
 
@@ -135,37 +142,35 @@ impl Chessboard {
         bounds: Rectangle,
         renderer: &mut (impl iced::advanced::Renderer + iced::advanced::svg::Renderer),
     ) {
-        let image = Chessboard::piece_to_image(piece_type, piece_color);
-        let image_handle = Handle::from_memory(image);
-        let piece_svg = Svg::new(image_handle);
+        let piece_svg = self.piece_to_svg(piece_type, piece_color);
         renderer.draw_svg(piece_svg, bounds);
     }
 
-    fn piece_to_image(piece_type: owlchess::Piece, piece_color: owlchess::Color) -> &'static [u8] {
+    fn piece_to_svg(&self, piece_type: owlchess::Piece, piece_color: owlchess::Color) -> Svg {
         match piece_type {
             owlchess::Piece::Pawn => match piece_color {
-                owlchess::Color::White => include_bytes!("assets/Chess_plt45.svg"),
-                owlchess::Color::Black => include_bytes!("assets/Chess_pdt45.svg"),
+                owlchess::Color::White => self.images.white_pawn.clone(),
+                owlchess::Color::Black => self.images.black_pawn.clone(),
             },
             owlchess::Piece::Knight => match piece_color {
-                owlchess::Color::White => include_bytes!("assets/Chess_nlt45.svg"),
-                owlchess::Color::Black => include_bytes!("assets/Chess_ndt45.svg"),
+                owlchess::Color::White => self.images.white_knight.clone(),
+                owlchess::Color::Black => self.images.black_knight.clone(),
             },
             owlchess::Piece::Bishop => match piece_color {
-                owlchess::Color::White => include_bytes!("assets/Chess_blt45.svg"),
-                owlchess::Color::Black => include_bytes!("assets/Chess_bdt45.svg"),
+                owlchess::Color::White => self.images.white_bishop.clone(),
+                owlchess::Color::Black => self.images.black_bishop.clone(),
             },
             owlchess::Piece::Rook => match piece_color {
-                owlchess::Color::White => include_bytes!("assets/Chess_rlt45.svg"),
-                owlchess::Color::Black => include_bytes!("assets/Chess_rdt45.svg"),
+                owlchess::Color::White => self.images.white_rook.clone(),
+                owlchess::Color::Black => self.images.black_rook.clone(),
             },
             owlchess::Piece::Queen => match piece_color {
-                owlchess::Color::White => include_bytes!("assets/Chess_qlt45.svg"),
-                owlchess::Color::Black => include_bytes!("assets/Chess_qdt45.svg"),
+                owlchess::Color::White => self.images.white_queen.clone(),
+                owlchess::Color::Black => self.images.black_queen.clone(),
             },
             owlchess::Piece::King => match piece_color {
-                owlchess::Color::White => include_bytes!("assets/Chess_klt45.svg"),
-                owlchess::Color::Black => include_bytes!("assets/Chess_kdt45.svg"),
+                owlchess::Color::White => self.images.white_king.clone(),
+                owlchess::Color::Black => self.images.black_king.clone(),
             },
         }
     }
