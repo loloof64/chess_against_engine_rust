@@ -5,13 +5,15 @@ mod pieces_images;
 pub use colors::ChessboardColors;
 
 use iced::{
-    Border, Element, Length, Rectangle, Shadow, Size, Theme,
+    Border, Element, Length, Pixels, Point, Rectangle, Shadow, Size, Theme,
     advanced::{
-        Layout, Widget, layout, mouse,
+        Layout, Text, Widget, layout, mouse,
         renderer::{self, Quad},
         svg::Svg,
         widget::Tree,
     },
+    alignment::{Horizontal, Vertical},
+    widget::text::{LineHeight, Shaping, Wrapping},
 };
 use owlchess::{File, Rank};
 
@@ -174,11 +176,127 @@ impl Chessboard {
             },
         }
     }
+
+    fn draw_coordinates(
+        &self,
+        bounds: Rectangle,
+        renderer: &mut (
+                 impl iced::advanced::Renderer
+                 + iced::advanced::svg::Renderer
+                 + iced::advanced::text::Renderer
+             ),
+        viewport: &Rectangle,
+    ) {
+        let common_size = bounds.size().width;
+        let cell_size = common_size / 9.0;
+
+        let width = cell_size * 0.4;
+        let height = cell_size * 0.48;
+
+        let font = renderer.default_font();
+
+        for file in 0..8 {
+            let letter = (('A' as u8) + file) as char;
+
+            let text_position_1 = Point {
+                x: bounds.x + cell_size * (0.855 + file as f32),
+                y: bounds.y + cell_size * 0.000_000_01,
+            };
+
+            let text_position_2 = Point {
+                x: bounds.x + cell_size * (0.855 + file as f32),
+                y: bounds.y + cell_size * 8.500_000_01,
+            };
+
+            renderer.fill_text(
+                Text {
+                    wrapping: Wrapping::None,
+                    content: format!("{letter}"),
+                    bounds: bounds.size(),
+                    size: Pixels(width),
+                    line_height: LineHeight::Absolute(Pixels(height)),
+                    font: font,
+                    horizontal_alignment: Horizontal::Left,
+                    vertical_alignment: Vertical::Top,
+                    shaping: Shaping::default(),
+                },
+                text_position_1,
+                self.colors.coordinates,
+                *viewport,
+            );
+
+            renderer.fill_text(
+                Text {
+                    wrapping: Wrapping::None,
+                    content: format!("{letter}"),
+                    bounds: bounds.size(),
+                    size: Pixels(width),
+                    line_height: LineHeight::Absolute(Pixels(height)),
+                    font: font,
+                    horizontal_alignment: Horizontal::Left,
+                    vertical_alignment: Vertical::Top,
+                    shaping: Shaping::default(),
+                },
+                text_position_2,
+                self.colors.coordinates,
+                *viewport,
+            );
+        }
+
+        for rank in 0..8 {
+            let digit = (('1' as u8) + rank) as char;
+
+            let text_position_1 = Point {
+                x: bounds.x + cell_size * 0.15,
+                y: bounds.y + cell_size * (0.80 + (7 - rank) as f32),
+            };
+
+            let text_position_2 = Point {
+                x: bounds.x + cell_size * 8.65,
+                y: bounds.y + cell_size * (0.80 + (7 - rank) as f32),
+            };
+
+            renderer.fill_text(
+                Text {
+                    wrapping: Wrapping::None,
+                    content: format!("{digit}"),
+                    bounds: bounds.size(),
+                    size: Pixels(width),
+                    line_height: LineHeight::Absolute(Pixels(height)),
+                    font: font,
+                    horizontal_alignment: Horizontal::Left,
+                    vertical_alignment: Vertical::Top,
+                    shaping: Shaping::default(),
+                },
+                text_position_1,
+                self.colors.coordinates,
+                *viewport,
+            );
+
+            renderer.fill_text(
+                Text {
+                    wrapping: Wrapping::None,
+                    content: format!("{digit}"),
+                    bounds: bounds.size(),
+                    size: Pixels(width),
+                    line_height: LineHeight::Absolute(Pixels(height)),
+                    font: font,
+                    horizontal_alignment: Horizontal::Left,
+                    vertical_alignment: Vertical::Top,
+                    shaping: Shaping::default(),
+                },
+                text_position_2,
+                self.colors.coordinates,
+                *viewport,
+            );
+        }
+    }
 }
 
 impl<Message, Renderer> Widget<Message, Theme, Renderer> for Chessboard
 where
-    Renderer: iced::advanced::Renderer + iced::advanced::svg::Renderer,
+    Renderer:
+        iced::advanced::Renderer + iced::advanced::svg::Renderer + iced::advanced::text::Renderer,
 {
     fn size(&self) -> Size<Length> {
         Size {
@@ -210,7 +328,7 @@ where
         _style: &renderer::Style,
         layout: Layout<'_>,
         _cursor: mouse::Cursor,
-        _viewport: &Rectangle,
+        viewport: &Rectangle,
     ) {
         let allocated_bounds = layout.bounds();
         let allocated_size = allocated_bounds.size();
@@ -225,12 +343,14 @@ where
         self.draw_background(bounds, renderer);
         self.draw_cells(bounds, renderer);
         self.draw_pieces(bounds, renderer);
+        self.draw_coordinates(bounds, renderer, viewport);
     }
 }
 
 impl<'a, Message, Renderer> From<Chessboard> for Element<'a, Message, Theme, Renderer>
 where
-    Renderer: iced::advanced::Renderer + iced::advanced::svg::Renderer,
+    Renderer:
+        iced::advanced::Renderer + iced::advanced::svg::Renderer + iced::advanced::text::Renderer,
 {
     fn from(widget: Chessboard) -> Self {
         Self::new(widget)
