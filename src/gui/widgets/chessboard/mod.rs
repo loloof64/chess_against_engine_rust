@@ -29,8 +29,6 @@ use crate::gui::widgets::chessboard::pieces_images::PiecesImages;
 struct DndData {
     start_file: u8,
     start_rank: u8,
-    end_file: u8,
-    end_rank: u8,
     location: Point,
     piece_type: owlchess::Piece,
     piece_color: owlchess::Color,
@@ -381,15 +379,10 @@ impl Chessboard {
                         self.dnd_data = Some(DndData {
                             start_file: file,
                             start_rank: rank,
-                            end_file: file,
-                            end_rank: rank,
                             location: dnd_position,
                             piece_color,
                             piece_type,
                         });
-                        /////////////////////////////////////////////////
-                        println!("Button pressed [{}, {}]", file, rank);
-                        /////////////////////////////////////////////////
                     }
                 }
             }
@@ -410,21 +403,29 @@ impl Chessboard {
             {
                 let (file, rank) = self.get_file_and_rank(position, layout.bounds());
                 if Chessboard::in_cell_bounds(file, rank) {
-                    /////////////////////////////////////////////////////////
-                    println!("Button released [{}, {}]", file, rank);
-                    /////////////////////////////////////////////////////////
+                    let dnd_data_clone = self.dnd_data.clone().unwrap();
+                    let start_file = dnd_data_clone.start_file as u8;
+                    let start_rank = dnd_data_clone.start_rank as u8;
+                    let end_file = file as u8;
+                    let end_rank = rank as u8;
+
+                    let board_logic = owlchess::Board::from_fen(&self.fen).expect("invalid fen");
+                    let matching_move =
+                        Chessboard::get_uci_move(start_file, start_rank, end_file, end_rank);
+                    let matching_move =
+                        owlchess::Move::from_uci_legal(matching_move.as_str(), &board_logic);
+                    if let Ok(matching_move) = matching_move {
+                        let matching_move = board_logic.make_move(matching_move);
+                        if let Ok(board_logic) = matching_move {
+                            self.fen = board_logic.as_fen();
+                        }
+                    }
+
                     self.dnd_data = None;
                 } else {
                     self.dnd_data = None;
-                    /////////////////////////////////////////////////////////
-                    println!("Button released outside of the board's cells.");
-                    /////////////////////////////////////////////////////////
                 }
             } else {
-                /////////////////////////////////////////////////////////
-                println!("Button released outside of the board.");
-                /////////////////////////////////////////////////////////
-
                 self.dnd_data = None;
             }
         }
@@ -447,17 +448,10 @@ impl Chessboard {
                 if Chessboard::in_cell_bounds(file, rank)
                     && let Some(dnd_position) = dnd_position
                 {
-                    let file = file as u8;
-                    let rank = rank as u8;
                     self.dnd_data = Some(DndData {
-                        end_file: file,
-                        end_rank: rank,
                         location: dnd_position,
                         ..self.dnd_data.clone().unwrap()
                     });
-                    /////////////////////////////////////////////////
-                    println!("Mouse moved [{}, {}]", file, rank);
-                    /////////////////////////////////////////////////
                 }
             }
         }
@@ -479,6 +473,14 @@ impl Chessboard {
 
     fn in_cell_bounds(file: i8, rank: i8) -> bool {
         file >= 0 && file < 8 && rank >= 0 && rank < 8
+    }
+
+    fn get_uci_move(start_file: u8, start_rank: u8, end_file: u8, end_rank: u8) -> String {
+        let start_file = ('a' as u8 + start_file) as char;
+        let start_rank = ('1' as u8 + start_rank) as char;
+        let end_file = ('a' as u8 + end_file) as char;
+        let end_rank = ('1' as u8 + end_rank) as char;
+        format!("{start_file}{start_rank}{end_file}{end_rank}")
     }
 }
 
