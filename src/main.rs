@@ -10,7 +10,7 @@ use iced::{
     widget::{Svg, button, column, container, row, svg::Handle},
 };
 
-use crate::gui::widgets::chessboard::ChessboardOptionsBuilder;
+use crate::gui::widgets::chessboard::{self, ChessboardOptionsBuilder};
 
 static SWAP_VERT_BYTES: &[u8] = include_bytes!("swap-vert.svg");
 static SWAP_VERT_HANDLE: LazyLock<Handle> = LazyLock::new(|| Handle::from_memory(SWAP_VERT_BYTES));
@@ -22,17 +22,28 @@ fn main() -> iced::Result {
 #[derive(Debug, Clone)]
 enum Message {
     ToggleBoardOrientation,
+    UpdatePosition(String),
 }
 
-#[derive(Default)]
 struct App {
     board_reversed: bool,
+    board_fen: String,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self {
+            board_reversed: false,
+            board_fen: owlchess::Board::initial().as_fen(),
+        }
+    }
 }
 
 impl App {
     fn update(&mut self, message: Message) {
         match message {
             Message::ToggleBoardOrientation => self.board_reversed = !self.board_reversed,
+            Message::UpdatePosition(new_position) => self.board_fen = new_position,
         }
     }
 
@@ -57,11 +68,11 @@ impl App {
             container(Chessboard::new(
                 ChessboardOptionsBuilder::new()
                     .set_reversed(self.board_reversed)
-                    .set_position(
-                        "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
-                            .to_string()
-                    )
+                    .set_position(self.board_fen.to_string())
                     .build(),
+                chessboard::MessageProducer {
+                    build_update_position: App::build_update_position_message,
+                }
             ))
             .center(Length::Fill)
         ]
@@ -69,5 +80,9 @@ impl App {
         .padding(10)
         .spacing(10)
         .into()
+    }
+
+    fn build_update_position_message(new_position: String) -> Message {
+        Message::UpdatePosition(new_position)
     }
 }

@@ -34,22 +34,34 @@ struct DndData {
     piece_color: owlchess::Color,
 }
 
-pub struct Chessboard {
+/// The builders for the messages the chessboard
+/// component will produce.
+/// UPM generic stands for UpdatePositionMessage
+#[derive(Debug, Clone)]
+pub struct MessageProducer<UPM> {
+    pub build_update_position: fn(String) -> UPM,
+}
+
+/// A chessboard component
+/// UPM generic stands for UpdatePositionMessage
+pub struct Chessboard<UPM> {
     colors: ChessboardColors,
     fen: String,
     reversed: bool,
     images: PiecesImages,
     dnd_data: Option<DndData>,
+    messages_producer: MessageProducer<UPM>,
 }
 
-impl Chessboard {
-    pub fn new(options: ChessboardOptions) -> Self {
+impl<UPM> Chessboard<UPM> {
+    pub fn new(options: ChessboardOptions, messages_producer: MessageProducer<UPM>) -> Self {
         Chessboard {
             colors: options.colors,
             fen: options.fen,
             reversed: options.reversed,
             images: PiecesImages::new(),
             dnd_data: None,
+            messages_producer,
         }
     }
 
@@ -361,7 +373,7 @@ impl Chessboard {
             let position = cursor.position_in(layout.bounds());
             if let Some(position) = position {
                 let (file, rank) = self.get_file_and_rank(position, layout.bounds());
-                if Chessboard::in_cell_bounds(file, rank) {
+                if Chessboard::<UPM>::in_cell_bounds(file, rank) {
                     let file = file as u8;
                     let rank = rank as u8;
                     let board_logic = owlchess::Board::from_fen(&self.fen).expect("invalid fen");
@@ -394,6 +406,7 @@ impl Chessboard {
         event: iced::Event,
         layout: Layout<'_>,
         cursor: mouse::Cursor,
+        shell: &mut iced::advanced::Shell<'_, UPM>,
     ) {
         if let iced::Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) = event {
             // Position relative to the component
@@ -402,7 +415,7 @@ impl Chessboard {
                 && self.dnd_data.is_some()
             {
                 let (file, rank) = self.get_file_and_rank(position, layout.bounds());
-                if Chessboard::in_cell_bounds(file, rank) {
+                if Chessboard::<UPM>::in_cell_bounds(file, rank) {
                     let dnd_data_clone = self.dnd_data.clone().unwrap();
                     let start_file = dnd_data_clone.start_file as u8;
                     let start_rank = dnd_data_clone.start_rank as u8;
@@ -411,13 +424,16 @@ impl Chessboard {
 
                     let board_logic = owlchess::Board::from_fen(&self.fen).expect("invalid fen");
                     let matching_move =
-                        Chessboard::get_uci_move(start_file, start_rank, end_file, end_rank);
+                        Chessboard::<UPM>::get_uci_move(start_file, start_rank, end_file, end_rank);
                     let matching_move =
                         owlchess::Move::from_uci_legal(matching_move.as_str(), &board_logic);
                     if let Ok(matching_move) = matching_move {
                         let matching_move = board_logic.make_move(matching_move);
                         if let Ok(board_logic) = matching_move {
-                            self.fen = board_logic.as_fen();
+                            let new_fen = board_logic.as_fen();
+                            let update_message =
+                                (self.messages_producer.build_update_position)(new_fen);
+                            shell.publish(update_message);
                         }
                     }
 
@@ -445,7 +461,7 @@ impl Chessboard {
             {
                 let (file, rank) = self.get_file_and_rank(position, layout.bounds());
                 let dnd_position = cursor.position_over(layout.bounds());
-                if Chessboard::in_cell_bounds(file, rank)
+                if Chessboard::<UPM>::in_cell_bounds(file, rank)
                     && let Some(dnd_position) = dnd_position
                 {
                     self.dnd_data = Some(DndData {
@@ -484,7 +500,7 @@ impl Chessboard {
     }
 }
 
-impl<Message, Renderer> Widget<Message, Theme, Renderer> for Chessboard
+impl<Message, Renderer> Widget<Message, Theme, Renderer> for Chessboard<Message>
 where
     Renderer:
         iced::advanced::Renderer + iced::advanced::svg::Renderer + iced::advanced::text::Renderer,
@@ -547,7 +563,7 @@ where
         cursor: mouse::Cursor,
         _renderer: &Renderer,
         _clipboard: &mut dyn iced::advanced::Clipboard,
-        _shell: &mut iced::advanced::Shell<'_, Message>,
+        shell: &mut iced::advanced::Shell<'_, Message>,
         _viewport: &Rectangle,
     ) -> iced::advanced::graphics::core::event::Status {
         match event {
@@ -556,7 +572,7 @@ where
                 event::Status::Captured
             }
             iced::Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
-                self.handle_button_released(event, layout, cursor);
+                self.handle_button_released(event, layout, cursor, shell);
                 event::Status::Captured
             }
             iced::Event::Mouse(mouse::Event::CursorMoved { position: _ }) => {
@@ -568,12 +584,12 @@ where
     }
 }
 
-impl<'a, Message, Renderer> From<Chessboard> for Element<'a, Message, Theme, Renderer>
+impl<'a, Message: 'a, Renderer> From<Chessboard<Message>> for Element<'a, Message, Theme, Renderer>
 where
     Renderer:
         iced::advanced::Renderer + iced::advanced::svg::Renderer + iced::advanced::text::Renderer,
 {
-    fn from(widget: Chessboard) -> Self {
+    fn from(widget: Chessboard<Message>) -> Self {
         Self::new(widget)
     }
 }
