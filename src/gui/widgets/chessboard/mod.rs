@@ -10,7 +10,9 @@ pub use options::{ChessboardOptions, ChessboardOptionsBuilder};
 use iced::{
     Border, Color, Element, Length, Pixels, Point, Rectangle, Shadow, Size, Theme,
     advanced::{
-        Layout, Text, Widget, layout, mouse,
+        Layout, Text, Widget,
+        graphics::core::event,
+        layout, mouse,
         renderer::{self, Quad},
         svg::Svg,
         widget::Tree,
@@ -23,11 +25,15 @@ use owlchess::{File, Rank};
 
 use crate::gui::widgets::chessboard::pieces_images::PiecesImages;
 
+#[derive(Debug, Clone)]
+struct DndData {}
+
 pub struct Chessboard {
     colors: ChessboardColors,
     fen: String,
     reversed: bool,
     images: PiecesImages,
+    dnd_data: Option<DndData>,
 }
 
 impl Chessboard {
@@ -37,6 +43,7 @@ impl Chessboard {
             fen: options.fen,
             reversed: options.reversed,
             images: PiecesImages::new(),
+            dnd_data: None,
         }
     }
 
@@ -315,6 +322,60 @@ impl Chessboard {
             color,
         );
     }
+
+    fn handle_button_pressed(
+        &mut self,
+        event: iced::Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+    ) {
+        if let iced::Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) = event {
+            // Position relative to the component
+            let position = cursor.position_in(layout.bounds());
+            if let Some(position) = position {
+                self.dnd_data = Some(DndData {});
+                println!("Button pressed ({}, {})", position.x, position.y);
+            }
+        }
+    }
+
+    fn handle_button_released(
+        &mut self,
+        event: iced::Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+    ) {
+        if let iced::Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) = event {
+            // Position relative to the component
+            let position = cursor.position_in(layout.bounds());
+            if let Some(position) = position
+                && self.dnd_data.is_some()
+            {
+                self.dnd_data = None;
+                println!("Button released ({}, {})", position.x, position.y);
+            } else {
+                self.dnd_data = None;
+                println!("Button released outside of the board.");
+            }
+        }
+    }
+
+    fn handle_mouse_moved(
+        &mut self,
+        event: iced::Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+    ) {
+        if let iced::Event::Mouse(mouse::Event::CursorMoved { position: _ }) = event {
+            // Position relative to the component
+            let position = cursor.position_in(layout.bounds());
+            if let Some(position) = position
+                && self.dnd_data.is_some()
+            {
+                println!("Mouse moved ({}, {})", position.x, position.y);
+            }
+        }
+    }
 }
 
 impl<Message, Renderer> Widget<Message, Theme, Renderer> for Chessboard
@@ -369,6 +430,34 @@ where
         self.draw_pieces(bounds, renderer);
         self.draw_coordinates(bounds, renderer, viewport);
         self.draw_player_turn(bounds, renderer);
+    }
+
+    fn on_event(
+        &mut self,
+        _state: &mut Tree,
+        event: iced::Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        _renderer: &Renderer,
+        _clipboard: &mut dyn iced::advanced::Clipboard,
+        _shell: &mut iced::advanced::Shell<'_, Message>,
+        _viewport: &Rectangle,
+    ) -> iced::advanced::graphics::core::event::Status {
+        match event {
+            iced::Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
+                self.handle_button_pressed(event, layout, cursor);
+                event::Status::Captured
+            }
+            iced::Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
+                self.handle_button_released(event, layout, cursor);
+                event::Status::Captured
+            }
+            iced::Event::Mouse(mouse::Event::CursorMoved { position: _ }) => {
+                self.handle_mouse_moved(event, layout, cursor);
+                event::Status::Captured
+            }
+            _ => event::Status::Ignored,
+        }
     }
 }
 
