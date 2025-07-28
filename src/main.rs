@@ -4,6 +4,8 @@ mod gui;
 use gui::widgets::chessboard::Chessboard;
 use iced::{Length, widget::container};
 
+use crate::gui::widgets::chessboard::ChessboardOptions;
+
 fn main() -> iced::Result {
     iced::run("Chess against engine", App::update, App::view)
 }
@@ -18,6 +20,8 @@ impl App {
     fn update(&mut self, _message: Message) {}
 
     fn view(&self) -> iced::Element<Message> {
-        container(Chessboard::new()).center(Length::Fill).into()
+        container(Chessboard::new(ChessboardOptions::default()))
+            .center(Length::Fill)
+            .into()
     }
 }

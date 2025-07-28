@@ -1,8 +1,10 @@
 //! A chessboard component
 mod colors;
+mod options;
 mod pieces_images;
 
 pub use colors::ChessboardColors;
+pub use options::ChessboardOptions;
 
 use iced::{
     Border, Color, Element, Length, Pixels, Point, Rectangle, Shadow, Size, Theme,
@@ -27,38 +29,10 @@ pub struct Chessboard {
 }
 
 impl Chessboard {
-    /// Chessboard with default colors.
-    pub fn new() -> Self {
+    pub fn new(options: ChessboardOptions) -> Self {
         Chessboard {
-            colors: ChessboardColors::default(),
-            fen: owlchess::Board::initial().as_fen(),
-            images: PiecesImages::new(),
-        }
-    }
-
-    /// Chessboard with custom colors.
-    pub fn new_from_colors(colors: ChessboardColors) -> Self {
-        Chessboard {
-            colors: colors,
-            fen: owlchess::Board::initial().as_fen(),
-            images: PiecesImages::new(),
-        }
-    }
-
-    /// Chessboard with custom Forsyth-Edwards Notation position.
-    pub fn new_from_position(fen: String) -> Self {
-        Chessboard {
-            colors: ChessboardColors::default(),
-            fen: fen,
-            images: PiecesImages::new(),
-        }
-    }
-
-    /// Chessboard with custom colors and Forsyth-Edwards Notation position.
-    pub fn new_from_colors_and_position(colors: ChessboardColors, fen: String) -> Self {
-        Chessboard {
-            colors: colors,
-            fen: fen,
+            colors: options.colors,
+            fen: options.fen,
             images: PiecesImages::new(),
         }
     }
