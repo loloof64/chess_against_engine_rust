@@ -4,7 +4,8 @@ mod options;
 mod pieces_images;
 
 pub use colors::ChessboardColors;
-pub use options::ChessboardOptions;
+#[allow(unused)]
+pub use options::{ChessboardOptions, ChessboardOptionsBuilder};
 
 use iced::{
     Border, Color, Element, Length, Pixels, Point, Rectangle, Shadow, Size, Theme,
@@ -25,6 +26,7 @@ use crate::gui::widgets::chessboard::pieces_images::PiecesImages;
 pub struct Chessboard {
     colors: ChessboardColors,
     fen: String,
+    reversed: bool,
     images: PiecesImages,
 }
 
@@ -33,6 +35,7 @@ impl Chessboard {
         Chessboard {
             colors: options.colors,
             fen: options.fen,
+            reversed: options.reversed,
             images: PiecesImages::new(),
         }
     }
@@ -91,8 +94,8 @@ impl Chessboard {
 
         for row in 0..8 {
             for col in 0..8 {
-                let file = col;
-                let rank = row;
+                let file = if self.reversed { 7 - col } else { col };
+                let rank = if self.reversed { 7 - row } else { row };
                 let board_logic_cell =
                     board_logic.get2(File::from_index(file), Rank::from_index(rank));
                 let is_occupied_cell = board_logic_cell.is_occupied();
@@ -166,16 +169,17 @@ impl Chessboard {
 
         let font = renderer.default_font();
 
-        for file in 0..8 {
+        for col in 0..8 {
+            let file = if self.reversed { 7 - col } else { col };
             let letter = (('A' as u8) + file) as char;
 
             let text_position_1 = Point {
-                x: bounds.x + cell_size * (0.855 + file as f32),
+                x: bounds.x + cell_size * (0.855 + col as f32),
                 y: bounds.y + cell_size * 0.000_000_01,
             };
 
             let text_position_2 = Point {
-                x: bounds.x + cell_size * (0.855 + file as f32),
+                x: bounds.x + cell_size * (0.855 + col as f32),
                 y: bounds.y + cell_size * 8.500_000_01,
             };
 
@@ -214,17 +218,18 @@ impl Chessboard {
             );
         }
 
-        for rank in 0..8 {
+        for row in 0..8 {
+            let rank = if self.reversed { 7 - row } else { row };
             let digit = (('1' as u8) + rank) as char;
 
             let text_position_1 = Point {
                 x: bounds.x + cell_size * 0.15,
-                y: bounds.y + cell_size * (0.80 + (7 - rank) as f32),
+                y: bounds.y + cell_size * (0.80 + (7 - row) as f32),
             };
 
             let text_position_2 = Point {
                 x: bounds.x + cell_size * 8.65,
-                y: bounds.y + cell_size * (0.80 + (7 - rank) as f32),
+                y: bounds.y + cell_size * (0.80 + (7 - row) as f32),
             };
 
             renderer.fill_text(
@@ -270,12 +275,15 @@ impl Chessboard {
         let board_logic = owlchess::Board::from_fen(&self.fen).expect("invalid fen");
         let is_white_turn = board_logic.side() == owlchess::Color::White;
 
-        let x = cell_size * 8.5 + bounds.x;
-        let y = if is_white_turn {
-            cell_size * 8.5
+        let x_factor = if self.reversed { 0.025 } else { 8.5 };
+        let y_factor = if self.reversed {
+            if is_white_turn { 0.025 } else { 8.5 }
         } else {
-            cell_size * 0.025
-        } + bounds.y;
+            if is_white_turn { 8.5 } else { 0.025 }
+        };
+
+        let x = cell_size * x_factor + bounds.x;
+        let y = cell_size * y_factor + bounds.y;
         let size = cell_size * 0.5;
 
         let circle_bounds = Rectangle {

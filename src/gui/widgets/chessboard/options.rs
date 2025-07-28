@@ -4,6 +4,7 @@ use crate::gui::widgets::chessboard::ChessboardColors;
 pub struct ChessboardOptions {
     pub colors: ChessboardColors,
     pub fen: String,
+    pub reversed: bool,
 }
 
 impl Default for ChessboardOptions {
@@ -11,6 +12,7 @@ impl Default for ChessboardOptions {
         Self {
             colors: ChessboardColors::default(),
             fen: owlchess::Board::initial().as_fen(),
+            reversed: false,
         }
     }
 }
@@ -36,6 +38,12 @@ impl ChessboardOptionsBuilder {
     #[allow(unused)]
     pub fn set_position(&mut self, fen: String) -> &mut Self {
         self.options.fen = fen;
+        self
+    }
+
+    #[allow(unused)]
+    pub fn set_reversed(&mut self, reversed: bool) -> &mut Self {
+        self.options.reversed = reversed;
         self
     }
 
