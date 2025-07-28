@@ -26,7 +26,15 @@ use owlchess::{File, Rank};
 use crate::gui::widgets::chessboard::pieces_images::PiecesImages;
 
 #[derive(Debug, Clone)]
-struct DndData {}
+struct DndData {
+    start_file: u8,
+    start_rank: u8,
+    end_file: u8,
+    end_rank: u8,
+    location: Point,
+    piece_type: owlchess::Piece,
+    piece_color: owlchess::Color,
+}
 
 pub struct Chessboard {
     colors: ChessboardColors,
@@ -323,6 +331,26 @@ impl Chessboard {
         );
     }
 
+    fn draw_dragged_piece(
+        &self,
+        bounds: Rectangle,
+        renderer: &mut (impl iced::advanced::Renderer + iced::advanced::svg::Renderer),
+    ) {
+        if let Some(dnd_data) = self.dnd_data.clone() {
+            let common_size = bounds.size().width;
+            let cell_size = common_size / 9.0;
+
+            let piece_svg = self.piece_to_svg(dnd_data.piece_type, dnd_data.piece_color);
+            let piece_bounds = Rectangle {
+                x: dnd_data.location.x,
+                y: dnd_data.location.y,
+                width: cell_size,
+                height: cell_size,
+            };
+            renderer.draw_svg(piece_svg, piece_bounds);
+        }
+    }
+
     fn handle_button_pressed(
         &mut self,
         event: iced::Event,
@@ -335,8 +363,33 @@ impl Chessboard {
             if let Some(position) = position {
                 let (file, rank) = self.get_file_and_rank(position, layout.bounds());
                 if Chessboard::in_cell_bounds(file, rank) {
-                    self.dnd_data = Some(DndData {});
-                    println!("Button pressed [{}, {}]", file, rank);
+                    let file = file as u8;
+                    let rank = rank as u8;
+                    let board_logic = owlchess::Board::from_fen(&self.fen).expect("invalid fen");
+                    let matching_cell = board_logic.get2(
+                        owlchess::File::from_index(file as usize),
+                        owlchess::Rank::from_index(7 - rank as usize),
+                    );
+                    let piece_color = matching_cell.color();
+                    let piece_type = matching_cell.piece();
+                    let dnd_position = cursor.position_over(layout.bounds());
+                    if let Some(piece_color) = piece_color
+                        && let Some(piece_type) = piece_type
+                        && let Some(dnd_position) = dnd_position
+                    {
+                        self.dnd_data = Some(DndData {
+                            start_file: file,
+                            start_rank: rank,
+                            end_file: file,
+                            end_rank: rank,
+                            location: dnd_position,
+                            piece_color,
+                            piece_type,
+                        });
+                        /////////////////////////////////////////////////
+                        println!("Button pressed [{}, {}]", file, rank);
+                        /////////////////////////////////////////////////
+                    }
                 }
             }
         }
@@ -356,15 +409,22 @@ impl Chessboard {
             {
                 let (file, rank) = self.get_file_and_rank(position, layout.bounds());
                 if Chessboard::in_cell_bounds(file, rank) {
+                    /////////////////////////////////////////////////////////
                     println!("Button released [{}, {}]", file, rank);
+                    /////////////////////////////////////////////////////////
                     self.dnd_data = None;
                 } else {
                     self.dnd_data = None;
+                    /////////////////////////////////////////////////////////
                     println!("Button released outside of the board's cells.");
+                    /////////////////////////////////////////////////////////
                 }
             } else {
-                self.dnd_data = None;
+                /////////////////////////////////////////////////////////
                 println!("Button released outside of the board.");
+                /////////////////////////////////////////////////////////
+
+                self.dnd_data = None;
             }
         }
     }
@@ -382,9 +442,21 @@ impl Chessboard {
                 && self.dnd_data.is_some()
             {
                 let (file, rank) = self.get_file_and_rank(position, layout.bounds());
-                if Chessboard::in_cell_bounds(file, rank) {
-                    self.dnd_data = Some(DndData {});
+                let dnd_position = cursor.position_over(layout.bounds());
+                if Chessboard::in_cell_bounds(file, rank)
+                    && let Some(dnd_position) = dnd_position
+                {
+                    let file = file as u8;
+                    let rank = rank as u8;
+                    self.dnd_data = Some(DndData {
+                        end_file: file,
+                        end_rank: rank,
+                        location: dnd_position,
+                        ..self.dnd_data.clone().unwrap()
+                    });
+                    /////////////////////////////////////////////////
                     println!("Mouse moved [{}, {}]", file, rank);
+                    /////////////////////////////////////////////////
                 }
             }
         }
@@ -461,6 +533,7 @@ where
         self.draw_pieces(bounds, renderer);
         self.draw_coordinates(bounds, renderer, viewport);
         self.draw_player_turn(bounds, renderer);
+        self.draw_dragged_piece(bounds, renderer);
     }
 
     fn on_event(
