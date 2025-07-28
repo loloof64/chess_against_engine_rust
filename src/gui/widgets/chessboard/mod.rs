@@ -5,7 +5,7 @@ mod pieces_images;
 pub use colors::ChessboardColors;
 
 use iced::{
-    Border, Element, Length, Pixels, Point, Rectangle, Shadow, Size, Theme,
+    Border, Color, Element, Length, Pixels, Point, Rectangle, Shadow, Size, Theme,
     advanced::{
         Layout, Text, Widget, layout, mouse,
         renderer::{self, Quad},
@@ -13,6 +13,7 @@ use iced::{
         widget::Tree,
     },
     alignment::{Horizontal, Vertical},
+    border::Radius,
     widget::text::{LineHeight, Shaping, Wrapping},
 };
 use owlchess::{File, Rank};
@@ -180,11 +181,7 @@ impl Chessboard {
     fn draw_coordinates(
         &self,
         bounds: Rectangle,
-        renderer: &mut (
-                 impl iced::advanced::Renderer
-                 + iced::advanced::svg::Renderer
-                 + iced::advanced::text::Renderer
-             ),
+        renderer: &mut (impl iced::advanced::Renderer + iced::advanced::text::Renderer),
         viewport: &Rectangle,
     ) {
         let common_size = bounds.size().width;
@@ -291,6 +288,51 @@ impl Chessboard {
             );
         }
     }
+
+    fn draw_player_turn(&self, bounds: Rectangle, renderer: &mut impl iced::advanced::Renderer) {
+        let common_size = bounds.size().width;
+        let cell_size = common_size / 9.0;
+
+        let board_logic = owlchess::Board::from_fen(&self.fen).expect("invalid fen");
+        let is_white_turn = board_logic.side() == owlchess::Color::White;
+
+        let x = cell_size * 8.5 + bounds.x;
+        let y = if is_white_turn {
+            cell_size * 8.5
+        } else {
+            cell_size * 0.025
+        } + bounds.y;
+        let size = cell_size * 0.5;
+
+        let circle_bounds = Rectangle {
+            x,
+            y,
+            width: size,
+            height: size,
+        };
+
+        let color = if is_white_turn {
+            self.colors.white_turn
+        } else {
+            self.colors.black_turn
+        };
+
+        let border_width = cell_size * 0.05;
+        let border_radius = cell_size * 0.5;
+
+        renderer.fill_quad(
+            Quad {
+                bounds: circle_bounds,
+                border: Border {
+                    color: Color::BLACK,
+                    width: border_width,
+                    radius: Radius::new(Pixels(border_radius)),
+                },
+                shadow: Shadow::default(),
+            },
+            color,
+        );
+    }
 }
 
 impl<Message, Renderer> Widget<Message, Theme, Renderer> for Chessboard
@@ -344,6 +386,7 @@ where
         self.draw_cells(bounds, renderer);
         self.draw_pieces(bounds, renderer);
         self.draw_coordinates(bounds, renderer, viewport);
+        self.draw_player_turn(bounds, renderer);
     }
 }
 

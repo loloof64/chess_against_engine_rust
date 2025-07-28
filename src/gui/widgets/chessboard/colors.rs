@@ -8,6 +8,8 @@ pub struct ChessboardColors {
     pub white_cell: Color,
     pub black_cell: Color,
     pub coordinates: Color,
+    pub white_turn: Color,
+    pub black_turn: Color,
 }
 
 /// Defaults colors for a [`super::Chessboard`].
@@ -18,6 +20,8 @@ impl Default for ChessboardColors {
             white_cell: Color::from_rgb8(255, 222, 173), // navajowhite
             black_cell: Color::from_rgb8(205, 133, 63),  // peru
             coordinates: Color::from_rgb8(255, 215, 0),  // gold
+            white_turn: Color::WHITE,
+            black_turn: Color::BLACK,
         }
     }
 }
@@ -62,6 +66,18 @@ impl ChessboardColorsBuilder {
     #[allow(unused)]
     pub fn set_coordinates(&mut self, color: Color) -> &mut Self {
         self.colors.coordinates = color;
+        self
+    }
+
+    #[allow(unused)]
+    pub fn set_white_turn(&mut self, color: Color) -> &mut Self {
+        self.colors.white_turn = color;
+        self
+    }
+
+    #[allow(unused)]
+    pub fn set_black_turn(&mut self, color: Color) -> &mut Self {
+        self.colors.black_turn = color;
         self
     }
 }
