@@ -339,11 +339,12 @@ impl Chessboard {
         if let Some(dnd_data) = self.dnd_data.clone() {
             let common_size = bounds.size().width;
             let cell_size = common_size / 9.0;
+            let half_cell_size = cell_size / 2.0;
 
             let piece_svg = self.piece_to_svg(dnd_data.piece_type, dnd_data.piece_color);
             let piece_bounds = Rectangle {
-                x: dnd_data.location.x,
-                y: dnd_data.location.y,
+                x: dnd_data.location.x - half_cell_size,
+                y: dnd_data.location.y - half_cell_size,
                 width: cell_size,
                 height: cell_size,
             };
