@@ -333,8 +333,11 @@ impl Chessboard {
             // Position relative to the component
             let position = cursor.position_in(layout.bounds());
             if let Some(position) = position {
-                self.dnd_data = Some(DndData {});
-                println!("Button pressed ({}, {})", position.x, position.y);
+                let (file, rank) = self.get_file_and_rank(position, layout.bounds());
+                if Chessboard::in_cell_bounds(file, rank) {
+                    self.dnd_data = Some(DndData {});
+                    println!("Button pressed [{}, {}]", file, rank);
+                }
             }
         }
     }
@@ -351,8 +354,14 @@ impl Chessboard {
             if let Some(position) = position
                 && self.dnd_data.is_some()
             {
-                self.dnd_data = None;
-                println!("Button released ({}, {})", position.x, position.y);
+                let (file, rank) = self.get_file_and_rank(position, layout.bounds());
+                if Chessboard::in_cell_bounds(file, rank) {
+                    println!("Button released [{}, {}]", file, rank);
+                    self.dnd_data = None;
+                } else {
+                    self.dnd_data = None;
+                    println!("Button released outside of the board's cells.");
+                }
             } else {
                 self.dnd_data = None;
                 println!("Button released outside of the board.");
@@ -372,9 +381,31 @@ impl Chessboard {
             if let Some(position) = position
                 && self.dnd_data.is_some()
             {
-                println!("Mouse moved ({}, {})", position.x, position.y);
+                let (file, rank) = self.get_file_and_rank(position, layout.bounds());
+                if Chessboard::in_cell_bounds(file, rank) {
+                    self.dnd_data = Some(DndData {});
+                    println!("Mouse moved [{}, {}]", file, rank);
+                }
             }
         }
+    }
+
+    fn get_file_and_rank(&self, position: Point, bounds: Rectangle) -> (i8, i8) {
+        let common_size = bounds.size().width;
+        let cell_size = common_size / 9.0;
+        let half_cell_size = cell_size / 2.0;
+
+        let col = ((position.x - half_cell_size) / cell_size).floor() as i8;
+        let row = ((position.y - half_cell_size) / cell_size).floor() as i8;
+
+        let file = if self.reversed { 7 - col } else { col };
+        let rank = if self.reversed { row } else { 7 - row };
+
+        (file, rank)
+    }
+
+    fn in_cell_bounds(file: i8, rank: i8) -> bool {
+        file >= 0 && file < 8 && rank >= 0 && rank < 8
     }
 }
 
