@@ -121,13 +121,26 @@ impl<UPM> Chessboard<UPM> {
             for col in 0..8 {
                 let file = if self.reversed { 7 - col } else { col };
                 let rank = if self.reversed { 7 - row } else { row };
-                let board_logic_cell =
-                    board_logic.get2(File::from_index(file), Rank::from_index(rank));
+                let is_dragged_piece = match self.dnd_data {
+                    Some(DndData {
+                        start_file,
+                        start_rank,
+                        ..
+                    }) => (file == start_file) && (rank == start_rank),
+                    _ => false,
+                };
+                if is_dragged_piece {
+                    continue;
+                }
+                let board_logic_cell = board_logic.get2(
+                    File::from_index(file as usize),
+                    Rank::from_index(7 - rank as usize),
+                );
                 let is_occupied_cell = board_logic_cell.is_occupied();
                 if is_occupied_cell {
                     let piece_bounds = Rectangle {
                         x: bounds.x + cell_size * (0.5 + col as f32),
-                        y: bounds.y + cell_size * (0.5 + row as f32),
+                        y: bounds.y + cell_size * (7.5 - row as f32),
                         width: cell_size,
                         height: cell_size,
                     };

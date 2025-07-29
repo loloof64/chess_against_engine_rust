@@ -34,7 +34,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             board_reversed: false,
-            board_fen: owlchess::Board::initial().as_fen(),
+            board_fen: "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2".to_string(),
         }
     }
 }
