@@ -397,9 +397,12 @@ impl<UPM> Chessboard<UPM> {
                     let piece_color = matching_cell.color();
                     let piece_type = matching_cell.piece();
                     let dnd_position = cursor.position_over(layout.bounds());
+                    let is_white_turn = board_logic.side() == owlchess::Color::White;
                     if let Some(piece_color) = piece_color
                         && let Some(piece_type) = piece_type
                         && let Some(dnd_position) = dnd_position
+                        // is it our piece ?
+                        && is_white_turn == (piece_color == owlchess::Color::White)
                     {
                         self.dnd_data = Some(DndData {
                             start_file: file,
