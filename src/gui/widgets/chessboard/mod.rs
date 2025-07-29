@@ -34,6 +34,23 @@ struct DndData {
     piece_color: owlchess::Color,
 }
 
+#[derive(Debug, Clone)]
+struct PendingPromotion {
+    start_file: u8,
+    start_rank: u8,
+    location: Point,
+    piece_color: owlchess::Color,
+}
+
+#[derive(Debug, Clone)]
+#[allow(unused)]
+enum PromotionPiece {
+    Queen,
+    Rook,
+    Bishop,
+    Knight,
+}
+
 /// The builders for the messages the chessboard
 /// component will produce.
 /// UPM generic stands for UpdatePositionMessage
@@ -50,6 +67,7 @@ pub struct Chessboard<UPM> {
     reversed: bool,
     images: PiecesImages,
     dnd_data: Option<DndData>,
+    pending_promotion: Option<PendingPromotion>,
     messages_producer: MessageProducer<UPM>,
 }
 
@@ -61,6 +79,7 @@ impl<UPM> Chessboard<UPM> {
             reversed: options.reversed,
             images: PiecesImages::new(),
             dnd_data: None,
+            pending_promotion: None,
             messages_producer,
         }
     }
@@ -129,7 +148,15 @@ impl<UPM> Chessboard<UPM> {
                     }) => (file == start_file) && (rank == start_rank),
                     _ => false,
                 };
-                if is_dragged_piece {
+                let is_pending_promotion_piece = match self.pending_promotion {
+                    Some(PendingPromotion {
+                        start_file,
+                        start_rank,
+                        ..
+                    }) => (file == start_file) && (rank == start_rank),
+                    _ => false,
+                };
+                if is_dragged_piece || is_pending_promotion_piece {
                     continue;
                 }
                 let board_logic_cell = board_logic.get2(
@@ -375,12 +402,37 @@ impl<UPM> Chessboard<UPM> {
         }
     }
 
+    fn draw_pending_promotion_piece(
+        &self,
+        bounds: Rectangle,
+        renderer: &mut (impl iced::advanced::Renderer + iced::advanced::svg::Renderer),
+    ) {
+        if let Some(pending_promotion) = self.pending_promotion.clone() {
+            let common_size = bounds.size().width;
+            let cell_size = common_size / 9.0;
+            let half_cell_size = cell_size / 2.0;
+
+            let piece_svg = self.piece_to_svg(owlchess::Piece::Pawn, pending_promotion.piece_color);
+            let piece_bounds = Rectangle {
+                x: pending_promotion.location.x - half_cell_size,
+                y: pending_promotion.location.y - half_cell_size,
+                width: cell_size,
+                height: cell_size,
+            };
+            renderer.draw_svg(piece_svg, piece_bounds);
+        }
+    }
+
     fn handle_button_pressed(
         &mut self,
         event: iced::Event,
         layout: Layout<'_>,
         cursor: mouse::Cursor,
     ) {
+        let is_pending_prmotion = self.pending_promotion.is_some();
+        if is_pending_prmotion {
+            return;
+        }
         if let iced::Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) = event {
             // Position relative to the component
             let position = cursor.position_in(layout.bounds());
@@ -424,6 +476,10 @@ impl<UPM> Chessboard<UPM> {
         cursor: mouse::Cursor,
         shell: &mut iced::advanced::Shell<'_, UPM>,
     ) {
+        let is_pending_prmotion = self.pending_promotion.is_some();
+        if is_pending_prmotion {
+            return;
+        }
         if let iced::Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) = event {
             // Position relative to the component
             let position = cursor.position_in(layout.bounds());
@@ -439,21 +495,58 @@ impl<UPM> Chessboard<UPM> {
                     let end_rank = rank as u8;
 
                     let board_logic = owlchess::Board::from_fen(&self.fen).expect("invalid fen");
-                    let matching_move =
-                        Chessboard::<UPM>::get_uci_move(start_file, start_rank, end_file, end_rank);
-                    let matching_move =
-                        owlchess::Move::from_uci_legal(matching_move.as_str(), &board_logic);
-                    if let Ok(matching_move) = matching_move {
-                        let matching_move = board_logic.make_move(matching_move);
-                        if let Ok(board_logic) = matching_move {
-                            let new_fen = board_logic.as_fen();
-                            let update_message =
-                                (self.messages_producer.build_update_position)(new_fen);
-                            shell.publish(update_message);
+                    let promotion_move_test = Chessboard::<UPM>::get_uci_move(
+                        start_file,
+                        start_rank,
+                        end_file,
+                        end_rank,
+                        Some(PromotionPiece::Queen),
+                    );
+                    let promotion_move_test =
+                        owlchess::Move::from_uci_legal(promotion_move_test.as_str(), &board_logic);
+                    let is_promotion_move = match promotion_move_test {
+                        Ok(promotion_move) => promotion_move.kind().promote().is_some(),
+                        _ => false,
+                    };
+
+                    if is_promotion_move {
+                        let is_white_turn = board_logic.side() == owlchess::Color::White;
+                        let piece_color = if is_white_turn {
+                            owlchess::Color::White
+                        } else {
+                            owlchess::Color::Black
+                        };
+                        let dnd_data_clone = self.dnd_data.clone().unwrap();
+                        let location = dnd_data_clone.location;
+                        let start_file = dnd_data_clone.start_file;
+                        let start_rank = dnd_data_clone.start_rank;
+
+                        self.dnd_data = None;
+                        self.pending_promotion = Some(PendingPromotion {
+                            piece_color,
+                            location,
+                            start_file,
+                            start_rank,
+                        });
+                    } else {
+                        let matching_legal_move = Chessboard::<UPM>::get_uci_move(
+                            start_file, start_rank, end_file, end_rank, None,
+                        );
+                        let matching_legal_move = owlchess::Move::from_uci_legal(
+                            matching_legal_move.as_str(),
+                            &board_logic,
+                        );
+                        if let Ok(matching_legal_move) = matching_legal_move {
+                            let resulting_board_logic = board_logic.make_move(matching_legal_move);
+                            if let Ok(resulting_board_logic) = resulting_board_logic {
+                                let new_fen = resulting_board_logic.as_fen();
+                                let update_message =
+                                    (self.messages_producer.build_update_position)(new_fen);
+                                self.dnd_data = None;
+                                shell.publish(update_message);
+                            }
                         }
                     }
-
-                    self.dnd_data = None;
                 } else {
                     self.dnd_data = None;
                 }
@@ -469,6 +562,10 @@ impl<UPM> Chessboard<UPM> {
         layout: Layout<'_>,
         cursor: mouse::Cursor,
     ) {
+        let is_pending_prmotion = self.pending_promotion.is_some();
+        if is_pending_prmotion {
+            return;
+        }
         if let iced::Event::Mouse(mouse::Event::CursorMoved { position: _ }) = event {
             // Position relative to the component
             let position = cursor.position_in(layout.bounds());
@@ -507,12 +604,25 @@ impl<UPM> Chessboard<UPM> {
         file >= 0 && file < 8 && rank >= 0 && rank < 8
     }
 
-    fn get_uci_move(start_file: u8, start_rank: u8, end_file: u8, end_rank: u8) -> String {
+    fn get_uci_move(
+        start_file: u8,
+        start_rank: u8,
+        end_file: u8,
+        end_rank: u8,
+        promotion_piece: Option<PromotionPiece>,
+    ) -> String {
         let start_file = ('a' as u8 + start_file) as char;
         let start_rank = ('1' as u8 + start_rank) as char;
         let end_file = ('a' as u8 + end_file) as char;
         let end_rank = ('1' as u8 + end_rank) as char;
-        format!("{start_file}{start_rank}{end_file}{end_rank}")
+        let promotion_piece = match promotion_piece {
+            Some(PromotionPiece::Queen) => "q",
+            Some(PromotionPiece::Rook) => "r",
+            Some(PromotionPiece::Bishop) => "b",
+            Some(PromotionPiece::Knight) => "n",
+            None => "",
+        };
+        format!("{start_file}{start_rank}{end_file}{end_rank}{promotion_piece}")
     }
 }
 
@@ -569,6 +679,7 @@ where
         self.draw_coordinates(bounds, renderer, viewport);
         self.draw_player_turn(bounds, renderer);
         self.draw_dragged_piece(bounds, renderer);
+        self.draw_pending_promotion_piece(bounds, renderer);
     }
 
     fn on_event(
