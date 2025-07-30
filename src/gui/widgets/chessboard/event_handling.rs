@@ -189,6 +189,8 @@ impl<UPM> Chessboard<UPM> {
                                     self.dnd_data = None;
                                     shell.publish(update_message);
                                 }
+                            } else {
+                                self.dnd_data = None;
                             }
                         }
                     } else {
