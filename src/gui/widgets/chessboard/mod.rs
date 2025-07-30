@@ -145,9 +145,6 @@ impl<UPM> Chessboard<UPM> {
                 end_rank,
                 Some(piece),
             );
-            ///////////////////////////////////
-            println!("{matching_legal_move}");
-            //////////////////////////////////
             let matching_legal_move =
                 owlchess::Move::from_uci_legal(matching_legal_move.as_str(), &board_logic);
             if let Ok(matching_legal_move) = matching_legal_move {
