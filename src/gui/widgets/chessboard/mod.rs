@@ -37,6 +37,10 @@ struct PendingPromotion {
     start_rank: u8,
     location: Point,
     piece_color: owlchess::Color,
+    queen_button_bounds: Rectangle,
+    rook_button_bounds: Rectangle,
+    bishop_button_bounds: Rectangle,
+    knight_button_bounds: Rectangle,
 }
 
 #[derive(Debug, Clone)]

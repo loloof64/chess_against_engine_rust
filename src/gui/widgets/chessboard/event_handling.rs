@@ -1,4 +1,7 @@
-use iced::advanced::{Layout, mouse};
+use iced::{
+    Rectangle,
+    advanced::{Layout, mouse},
+};
 
 use crate::{
     Chessboard,
@@ -105,11 +108,41 @@ impl<UPM> Chessboard<UPM> {
                         let start_rank = dnd_data_clone.start_rank;
 
                         self.dnd_data = None;
+                        let bounds = layout.bounds();
+                        let cell_size = bounds.size().width / 9.0;
+                        let queen_button_bounds = Rectangle {
+                            x: bounds.x + cell_size * 1.0,
+                            y: bounds.y + cell_size * 4.0,
+                            width: cell_size,
+                            height: cell_size,
+                        };
+                        let rook_button_bounds = Rectangle {
+                            x: bounds.x + cell_size * 3.0,
+                            y: bounds.y + cell_size * 4.0,
+                            width: cell_size,
+                            height: cell_size,
+                        };
+                        let bishop_button_bounds = Rectangle {
+                            x: bounds.x + cell_size * 5.0,
+                            y: bounds.y + cell_size * 4.0,
+                            width: cell_size,
+                            height: cell_size,
+                        };
+                        let knight_button_bounds = Rectangle {
+                            x: bounds.x + cell_size * 7.0,
+                            y: bounds.y + cell_size * 4.0,
+                            width: cell_size,
+                            height: cell_size,
+                        };
                         self.pending_promotion = Some(PendingPromotion {
                             piece_color,
                             location,
                             start_file,
                             start_rank,
+                            queen_button_bounds,
+                            rook_button_bounds,
+                            bishop_button_bounds,
+                            knight_button_bounds,
                         });
                     } else {
                         let matching_legal_move = Chessboard::<UPM>::get_uci_move(

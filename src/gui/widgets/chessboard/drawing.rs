@@ -1,12 +1,13 @@
 use iced::{
     Border, Color, Pixels, Point, Rectangle, Shadow,
-    advanced::{Text, renderer::Quad, svg::Svg},
+    advanced::{
+        Text,
+        renderer::Quad,
+        svg::{self, Svg},
+    },
     alignment::{Horizontal, Vertical},
     border::Radius,
-    widget::{
-        button, svg,
-        text::{LineHeight, Shaping, Wrapping},
-    },
+    widget::text::{LineHeight, Shaping, Wrapping},
 };
 use owlchess::{File, Rank};
 
@@ -376,7 +377,7 @@ impl<UPM> Chessboard<UPM> {
         bounds: Rectangle,
         renderer: &mut (impl iced::advanced::Renderer + iced::advanced::svg::Renderer),
     ) {
-        if self.pending_promotion.clone().is_some() {
+        if let Some(pending_promotion) = self.pending_promotion.clone() {
             let common_size = bounds.size().width;
             let cell_size = common_size / 9.0;
             let half_cells_size = cell_size / 2.0;
@@ -399,15 +400,53 @@ impl<UPM> Chessboard<UPM> {
                 selector_background,
             );
 
-            /*
+            let board_logic = owlchess::Board::from_fen(&self.fen)
+                .expect(format!("invalid fen {}", self.fen).as_str());
+            let is_white_turn = board_logic.side() == owlchess::Color::White;
 
-                let queen_button: iced::widget::Button<'_, UPM, iced::Theme, iced::Renderer> = button(
-                    svg(self.images.black_queen_handle.clone())
-                        .width(cell_size)
-                        .height(cell_size),
-                )
-                .on_press();
-            */
+            let queen_svg_handle = if is_white_turn {
+                self.images.white_queen_handle.clone()
+            } else {
+                self.images.black_queen_handle.clone()
+            };
+
+            renderer.draw_svg(
+                svg::Svg::new(queen_svg_handle),
+                pending_promotion.queen_button_bounds,
+            );
+
+            let rook_svg_handle = if is_white_turn {
+                self.images.white_rook_handle.clone()
+            } else {
+                self.images.black_rook_handle.clone()
+            };
+
+            renderer.draw_svg(
+                svg::Svg::new(rook_svg_handle),
+                pending_promotion.rook_button_bounds,
+            );
+
+            let bishop_svg_handle = if is_white_turn {
+                self.images.white_bishop_handle.clone()
+            } else {
+                self.images.black_bishop_handle.clone()
+            };
+
+            renderer.draw_svg(
+                svg::Svg::new(bishop_svg_handle),
+                pending_promotion.bishop_button_bounds,
+            );
+
+            let knight_svg_handle = if is_white_turn {
+                self.images.white_knight_handle.clone()
+            } else {
+                self.images.black_knight_handle.clone()
+            };
+
+            renderer.draw_svg(
+                svg::Svg::new(knight_svg_handle),
+                pending_promotion.knight_button_bounds,
+            );
         }
     }
 }
