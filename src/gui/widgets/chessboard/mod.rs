@@ -35,6 +35,8 @@ struct DndData {
 struct PendingPromotion {
     start_file: u8,
     start_rank: u8,
+    end_file: u8,
+    end_rank: u8,
     location: Point,
     piece_color: owlchess::Color,
     queen_button_bounds: Rectangle,
@@ -123,6 +125,42 @@ impl<UPM> Chessboard<UPM> {
         };
         format!("{start_file}{start_rank}{end_file}{end_rank}{promotion_piece}")
     }
+
+    fn commit_promotion(
+        &mut self,
+        piece: PromotionPiece,
+        shell: &mut iced::advanced::Shell<'_, UPM>,
+    ) {
+        if let Some(pending_promotion) = self.pending_promotion.clone() {
+            let board_logic = owlchess::Board::from_fen(&self.fen).expect("invalid fen");
+
+            let start_file = pending_promotion.start_file;
+            let start_rank = pending_promotion.start_rank;
+            let end_file = pending_promotion.end_file;
+            let end_rank = pending_promotion.end_rank;
+            let matching_legal_move = Chessboard::<UPM>::get_uci_move(
+                start_file,
+                start_rank,
+                end_file,
+                end_rank,
+                Some(piece),
+            );
+            ///////////////////////////////////
+            println!("{matching_legal_move}");
+            //////////////////////////////////
+            let matching_legal_move =
+                owlchess::Move::from_uci_legal(matching_legal_move.as_str(), &board_logic);
+            if let Ok(matching_legal_move) = matching_legal_move {
+                let resulting_board_logic = board_logic.make_move(matching_legal_move);
+                if let Ok(resulting_board_logic) = resulting_board_logic {
+                    let new_fen = resulting_board_logic.as_fen();
+                    let update_message = (self.messages_producer.build_update_position)(new_fen);
+                    self.dnd_data = None;
+                    shell.publish(update_message);
+                }
+            }
+        }
+    }
 }
 
 impl<Message, Renderer> Widget<Message, Theme, Renderer> for Chessboard<Message>
@@ -195,7 +233,7 @@ where
     ) -> iced::advanced::graphics::core::event::Status {
         match event {
             iced::Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
-                self.handle_button_pressed(event, layout, cursor);
+                self.handle_button_pressed(event, layout, cursor, shell);
                 event::Status::Captured
             }
             iced::Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
