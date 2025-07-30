@@ -175,6 +175,7 @@ where
         self.draw_player_turn(bounds, renderer);
         self.draw_dragged_piece(bounds, renderer);
         self.draw_pending_promotion_piece(bounds, renderer);
+        self.draw_promotion_selector(bounds, renderer);
     }
 
     fn on_event(

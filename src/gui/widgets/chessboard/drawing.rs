@@ -3,7 +3,10 @@ use iced::{
     advanced::{Text, renderer::Quad, svg::Svg},
     alignment::{Horizontal, Vertical},
     border::Radius,
-    widget::text::{LineHeight, Shaping, Wrapping},
+    widget::{
+        button, svg,
+        text::{LineHeight, Shaping, Wrapping},
+    },
 };
 use owlchess::{File, Rank};
 
@@ -133,32 +136,32 @@ impl<UPM> Chessboard<UPM> {
         piece_type: owlchess::Piece,
         piece_color: owlchess::Color,
     ) -> Svg {
-        match piece_type {
+        Svg::new(match piece_type {
             owlchess::Piece::Pawn => match piece_color {
-                owlchess::Color::White => self.images.white_pawn.clone(),
-                owlchess::Color::Black => self.images.black_pawn.clone(),
+                owlchess::Color::White => self.images.white_pawn_handle.clone(),
+                owlchess::Color::Black => self.images.black_pawn_handle.clone(),
             },
             owlchess::Piece::Knight => match piece_color {
-                owlchess::Color::White => self.images.white_knight.clone(),
-                owlchess::Color::Black => self.images.black_knight.clone(),
+                owlchess::Color::White => self.images.white_knight_handle.clone(),
+                owlchess::Color::Black => self.images.black_knight_handle.clone(),
             },
             owlchess::Piece::Bishop => match piece_color {
-                owlchess::Color::White => self.images.white_bishop.clone(),
-                owlchess::Color::Black => self.images.black_bishop.clone(),
+                owlchess::Color::White => self.images.white_bishop_handle.clone(),
+                owlchess::Color::Black => self.images.black_bishop_handle.clone(),
             },
             owlchess::Piece::Rook => match piece_color {
-                owlchess::Color::White => self.images.white_rook.clone(),
-                owlchess::Color::Black => self.images.black_rook.clone(),
+                owlchess::Color::White => self.images.white_rook_handle.clone(),
+                owlchess::Color::Black => self.images.black_rook_handle.clone(),
             },
             owlchess::Piece::Queen => match piece_color {
-                owlchess::Color::White => self.images.white_queen.clone(),
-                owlchess::Color::Black => self.images.black_queen.clone(),
+                owlchess::Color::White => self.images.white_queen_handle.clone(),
+                owlchess::Color::Black => self.images.black_queen_handle.clone(),
             },
             owlchess::Piece::King => match piece_color {
-                owlchess::Color::White => self.images.white_king.clone(),
-                owlchess::Color::Black => self.images.black_king.clone(),
+                owlchess::Color::White => self.images.white_king_handle.clone(),
+                owlchess::Color::Black => self.images.black_king_handle.clone(),
             },
-        }
+        })
     }
 
     pub(crate) fn draw_coordinates(
@@ -365,6 +368,46 @@ impl<UPM> Chessboard<UPM> {
                 height: cell_size,
             };
             renderer.draw_svg(piece_svg, piece_bounds);
+        }
+    }
+
+    pub(crate) fn draw_promotion_selector(
+        &self,
+        bounds: Rectangle,
+        renderer: &mut (impl iced::advanced::Renderer + iced::advanced::svg::Renderer),
+    ) {
+        if self.pending_promotion.clone().is_some() {
+            let common_size = bounds.size().width;
+            let cell_size = common_size / 9.0;
+            let half_cells_size = cell_size / 2.0;
+
+            let selector_size = cell_size * 8.0;
+            let selector_offset = half_cells_size;
+            let selector_bounds = Rectangle {
+                x: bounds.x + selector_offset,
+                y: bounds.y + selector_offset,
+                width: selector_size,
+                height: selector_size,
+            };
+            let selector_background = Color::from_rgba8(125, 125, 125, 0.5);
+
+            renderer.fill_quad(
+                Quad {
+                    bounds: selector_bounds,
+                    ..Default::default()
+                },
+                selector_background,
+            );
+
+            /*
+
+                let queen_button: iced::widget::Button<'_, UPM, iced::Theme, iced::Renderer> = button(
+                    svg(self.images.black_queen_handle.clone())
+                        .width(cell_size)
+                        .height(cell_size),
+                )
+                .on_press();
+            */
         }
     }
 }
